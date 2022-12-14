@@ -1,0 +1,202 @@
+```{r}
+library(frontier)
+library(dplyr)
+library(plm)
+library(xtable)
+
+dados = read.csv("educ_saeb_gasto_2013-2015.csv")
+p.dados = pdata.frame(dados, index = c("municipio", "ano"))
+p.dados = p.dados[complete.cases(p.dados),]
+sum(is.na(p.dados))
+
+```
+
+# ESPECIFICAÇÃO: COBB DOUGLAS
+```{r}
+# LP
+options(scipen=1, digits=7)
+eficiencias = p.dados[, c("ano", "regiao", "uf", "municipio")]
+
+LP5 = sfa(log(X5LP_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) |
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(LP5)
+LP5GammaVar <- unname(coef(LP5)["gamma"]) * unname(coef(LP5)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(LP5)["gamma"]) * unname(coef(LP5)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(LP5)["gamma"])) * unname(coef(LP5)["sigmaSq"]))
+lrtest(LP5)
+eficiencias$ef_LP5 <- efficiencies(LP5, asInData = TRUE)
+summary(eficiencias)
+```
+
+```{r}
+############ 9 ano
+LP9 = sfa(log(X9LP_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) |
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(LP9, extraPar = TRUE)
+lrtest(LP9)
+summary(efficiencies(LP9))
+eficiencias$ef_LP9 <- efficiencies(LP9, asInData = TRUE)
+summary(eficiencias)
+LP9GammaVar = unname(coef(LP9)["gamma"]) * unname(coef(LP9)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(LP9)["gamma"]) * unname(coef(LP9)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(LP9)["gamma"]) ) * unname(coef(LP9)["sigmaSq"]))
+
+```
+
+```{r}
+# Matemática
+# 5 ano
+MT5 = sfa(log(X5MT_SAEB) ~ log(gasto_fund) + log(salario_medio) + log(salario_medio_pad) + log(media_aluno_turma) |
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(MT5)
+lrtest(MT5)
+summary(efficiencies(MT5))
+eficiencias$ef_MT5 <- efficiencies(MT5, asInData = TRUE)
+summary(eficiencias)
+
+MT5GammaVar = unname(coef(MT5)["gamma"]) * unname(coef(MT5)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(MT5)["gamma"]) * unname(coef(MT5)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(MT5)["gamma"])) * unname(coef(MT5)["sigmaSq"]))
+
+
+# "X9MT_SAEB" 
+MT9 = sfa(log(X9MT_SAEB) ~ log(gasto_fund) + log(salario_medio) + log(salario_medio_pad) + log(media_aluno_turma) |
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(MT9)
+lrtest(MT9)
+summary(efficiencies(MT9))
+eficiencias$ef_MT9 <- efficiencies(MT9, asInData = TRUE)
+summary(eficiencias)
+
+MT9GammaVar = unname(coef(MT9)["gamma"]) * unname(coef(MT9)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(MT9)["gamma"]) * unname(coef(MT9)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(MT9)["gamma"])) * unname(coef(MT9)["sigmaSq"]))
+
+```
+
+```{r}
+
+# abandono 
+abandono = sfa(log(abandono+1) ~ log(gasto_fund) + log(media_aluno_turma) +
+            + log(salario_medio) + log(salario_medio_pad) |
+            MIRD + superior + aprovacao +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 - 1
+            , data = p.dados, ineffDecrease = FALSE, timeEffect = TRUE)
+options(scipen=9, digits=6)
+summary(abandono)
+lrtest(abandono)
+summary(efficiencies(abandono))
+eficiencias$ef_abandono <- efficiencies(abandono, asInData = TRUE)
+summary(eficiencias)
+
+abandonoGammaVar = (unname(coef(abandono)["gamma"]) * unname(coef(abandono)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(abandono)["gamma"])) * unname(coef(abandono)["sigmaSq"]))
+
+```
+
+
+```{r}
+
+write.csv(eficiencias, file = "eficiencias(noNA).csv", row.names = FALSE)
+
+```
+
+# ESPECIFICAÇÃO: TRANSLOG
+```{r}
+eficienciaslog = p.dados[, c("ano", "regiao", "uf", "municipio")]
+
+```
+
+```{r}
+LP5log = sfa(log(X5LP_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) 
+            + I(0.5 * log(gasto_fund)^2) + I(0.5 * log(media_aluno_turma)^2) 
+            + I(0.5 * log(salario_medio)^2) + I(0.5 *log(salario_medio_pad)^2)|
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(LP5log)
+lrtest(LP5log)
+LP5logGammaVar <- unname(coef(LP5log)["gamma"]) * unname(coef(LP5log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(LP5log)["gamma"]) * unname(coef(LP5log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(LP5log)["gamma"])) * unname(coef(LP5log)["sigmaSq"]))
+
+LP9log = sfa(log(X9LP_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) 
+            + I(0.5 * log(gasto_fund)^2) + I(0.5 * log(media_aluno_turma)^2) 
+            + I(0.5 * log(salario_medio)^2) + I(0.5 *log(salario_medio_pad)^2)|
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(LP9log)
+lrtest(LP9log)
+LP9logGammaVar <- unname(coef(LP9log)["gamma"]) * unname(coef(LP9log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(LP9log)["gamma"]) * unname(coef(LP9log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(LP9log)["gamma"])) * unname(coef(LP9log)["sigmaSq"]))
+
+MT5log = sfa(log(X5MT_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) 
+            + I(0.5 * log(gasto_fund)^2) + I(0.5 * log(media_aluno_turma)^2) 
+            + I(0.5 * log(salario_medio)^2) + I(0.5 *log(salario_medio_pad)^2)|
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(MT5log)
+lrtest(MT5log)
+MT5logGammaVar <- unname(coef(MT5log)["gamma"]) * unname(coef(MT5log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(MT5log)["gamma"]) * unname(coef(MT5log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(MT5log)["gamma"])) * unname(coef(MT5log)["sigmaSq"]))
+
+MT9log = sfa(log(X9MT_SAEB) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) 
+            + I(0.5 * log(gasto_fund)^2) + I(0.5 * log(media_aluno_turma)^2) 
+            + I(0.5 * log(salario_medio)^2) + I(0.5 *log(salario_medio_pad)^2)|
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE)
+summary(MT9log)
+lrtest(MT9log)
+MT9logGammaVar <- unname(coef(MT9log)["gamma"]) * unname(coef(MT9log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(MT9log)["gamma"]) * unname(coef(MT9log)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(MT9log)["gamma"])) * unname(coef(MT9log)["sigmaSq"]))
+
+
+
+abanlog = sfa(log(abandono+1) ~ log(gasto_fund) + log(media_aluno_turma) +
+            log(salario_medio) + log(salario_medio_pad) 
+            + I(0.5 * log(gasto_fund)^2) + I(0.5 * log(media_aluno_turma)^2) 
+            + I(0.5 * log(salario_medio)^2) + I(0.5 *log(salario_medio_pad)^2)|
+            MIRD + superior +
+            afd1 + afd2 + afd3 + afd4 +
+            gestao.1 + gestao.2 + gestao.3 + gestao.4 + gestao.5 +
+            reprovacao + aprovacao - 1
+            , data = p.dados, timeEffect = TRUE, ineffDecrease = FALSE)
+options(scipen=1, digits=7)
+summary(abanlog)
+lrtest(abanlog)
+abanlogGammaVar <- unname(coef(abanlog)["gamma"]) * unname(coef(abanlog)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) / (unname(coef(abanlog)["gamma"]) * unname(coef(abanlog)["sigmaSq"]) * (1 - (2*dnorm(0) )^2) + (1 - unname(coef(abanlog)["gamma"])) * unname(coef(abanlog)["sigmaSq"]))
+
+
+```
+
+```{r}
+eficienciaslog$ef_LP5 <- efficiencies(LP5log, asInData = TRUE)
+eficienciaslog$ef_LP9 <- efficiencies(LP9log, asInData = TRUE)
+eficienciaslog$ef_MT5 <- efficiencies(MT5log, asInData = TRUE)
+eficienciaslog$ef_MT9 <- efficiencies(MT9log, asInData = TRUE)
+eficienciaslog$ef_aband <- efficiencies(abanlog, asInData = TRUE)
+
+write.csv(eficienciaslog, file = "eficienciasLog(NoNA).csv", row.names = FALSE)
+```
+
+
+
